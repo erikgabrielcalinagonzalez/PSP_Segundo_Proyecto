@@ -36,14 +36,17 @@ public class ParkingSimulation {
         //        - cuánto tiempo aparca: MIN_STAY_MS + random.nextInt(MAX_STAY_MS - MIN_STAY_MS + 1)
         //      Entregad al grupo la tarea visit(...) de ese coche y esperad ARRIVAL_MS hasta que
         //      llegue el siguiente.
-        try (ExecutorService ejecutor = Executors.newFixedThreadPool(CARS)) {
-            for (int i = 1; i < CARS + 1; i++) {
-                String car = String.format("Coche-½02d", i);
+        try (ExecutorService ejecutor = Executors.newFixedThreadPool(THREADS)) {
+            for (int i = 1; i <= CARS; i++) {
+                String car = String.format("Coche-%02d", i);
                 String gate = GATES[i % GATES.length];
                 long stayMs = MIN_STAY_MS + random.nextInt(MAX_STAY_MS - MIN_STAY_MS + 1);
-                ejecutor.submit(() -> visit(lot,car,gate,stayMs));
+
+                ejecutor.submit(() -> visit(lot, car, gate, stayMs));
+                Thread.sleep(ARRIVAL_MS);
             }
         }
+
         // TODO fase 4: con otro try-with-resources que envuelva al anterior, un
         //      ScheduledExecutorService que llame a report(lot) cada segundo.
         // TODO fase 3: cuando se hayan ido todos los coches, printSummary(lot).
@@ -52,8 +55,18 @@ public class ParkingSimulation {
     /** Lo que hace cada coche: entra, aparca stayMs milisegundos y sale. */
     static void visit(ParkingLot lot, String car, String gate, long stayMs) {
         // TODO fase 1: entrar (lot.enter), aparcar (dormir stayMs) y salir (lot.leave)
-
         // TODO fase 2: que el coche salga aunque haya una excepción mientras está aparcado
+        try {
+            lot.enter(car, gate);
+            try {
+                Thread.sleep(stayMs);
+            } finally {
+                lot.leave(car);
+            }
+            
+        } catch (InterruptedException e){
+                Thread.currentThread().interrupt();
+        }
     }
 
     /** Informe periódico: cuántos coches hay dentro, cuántos esperan y cuántos se han ido. */
